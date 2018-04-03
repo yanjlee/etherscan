@@ -9,14 +9,27 @@ from webscraping import download, xpath, common, adt
 
 
 SRC1 = 'https://etherscan.io/token/generic-tokentxns2?contractAddress=0xe25bcec5d3801ce3a794079bf94adf1b8ccd802d&mode=&p=%s'
-SRC2 = 'https://etherscan.io/token/generic-tokenholders2?a=0xe25bcec5d3801ce3a794079bf94adf1b8ccd802d&p=%s'
+SRC2 = 'https://etherscan.io/token/generic-tokenholders2?a=0xe25bcec5d3801ce3a794079bf94adf1b8ccd802d&s=2.5E%%2b26&p=%s'
+
+def scrape_title(num):
+    f = open('title.txt', 'w')
+    D = download.Download(read_cache=False)
+    url = 'https://etherscan.io/token/0xe25bcec5d3801ce3a794079bf94adf1b8ccd802d'
+    html = D.get(url)
+    ts = common.regex_get(html, r'Total\sSupply\:[^<]*</td>[^<]*<td>([^<]+)<')
+    vt = common.regex_get(html, r'Value\sper\sToken\:[^<]*</td>[^<]*<td>([^<]+)<')
+    th = common.regex_get(html, r'Token\sHolders\:[^<]*</td>[^<]*<td>([^<]+)<')
+    f.write('Total Supply: %s\n' % ts)
+    f.write('Value per Token: %s\n' % vt)
+    f.write('Token Holders: %s\n' % th)
+    f.write('No.Of.Transfers: %s\n' % num)
 
 def etherscan():
     found = adt.HashDict(int)
     f = open('transfers.csv', 'w')
-    f.write('"TxHash","Age","From","To","Quantity"')
+    f.write('"TxHash","Age","From","To","Quantity"\n')
     hf = open('holder.csv', 'w')
-    hf.write('"Rank","Address","Quantity","Percentage"')
+    hf.write('"Rank","Address","Quantity","Percentage"\n')
     
     scraper = cfscrape.create_scraper()
     for i in range(10, 0, -1):
@@ -33,6 +46,8 @@ def etherscan():
             if k not in found:
                 found[k]
                 hf.write(k + '\n')
+    num = common.regex_get(html, r'A\sTotal\sof\s(\d+)\sevents\sfound')
+    scrape_title(num)
 
 def holders_parse(html):
     infos = []

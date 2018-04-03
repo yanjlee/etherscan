@@ -7,14 +7,17 @@ import cookielib
 import cfscrape
 from webscraping import download, xpath, common, adt
 
+MAN = '0xe25bcec5d3801ce3a794079bf94adf1b8ccd802d'
+QASH = '0x618e75ac90b12c6049ba3b27f5d5f8651b0037f6'
 
-SRC1 = 'https://etherscan.io/token/generic-tokentxns2?contractAddress=0xe25bcec5d3801ce3a794079bf94adf1b8ccd802d&mode=&p=%s'
-SRC2 = 'https://etherscan.io/token/generic-tokenholders2?a=0xe25bcec5d3801ce3a794079bf94adf1b8ccd802d&s=2.5E%%2b26&p=%s'
 
-def scrape_title(num):
-    f = open('title.txt', 'w')
+def scrape_title(num, typ):
+    f = open('title_%s.txt' % typ, 'w')
     D = download.Download(read_cache=False)
-    url = 'https://etherscan.io/token/0xe25bcec5d3801ce3a794079bf94adf1b8ccd802d'
+
+    key = MAN if typ == 'MAN' else QASH
+    url = 'https://etherscan.io/token/%s' % key
+
     html = D.get(url)
     ts = common.regex_get(html, r'Total\sSupply\:[^<]*</td>[^<]*<td>([^<]+)<')
     vt = common.regex_get(html, r'Value\sper\sToken\:[^<]*</td>[^<]*<td>([^<]+)<')
@@ -24,30 +27,40 @@ def scrape_title(num):
     f.write('Token Holders: %s\n' % th)
     f.write('No.Of.Transfers: %s\n' % num)
 
-def etherscan():
+def etherscan(typ):
     found = adt.HashDict(int)
-    f = open('transfers.csv', 'w')
+    f = open('transfers_%s.csv' % typ, 'w')
     f.write('"TxHash","Age","From","To","Quantity"\n')
-    hf = open('holder.csv', 'w')
+    hf = open('holder_%s.csv' % typ, 'w')
     hf.write('"Rank","Address","Quantity","Percentage"\n')
     
+
+    key = MAN if typ == 'MAN' else QASH
+    SRC1 = 'https://etherscan.io/token/generic-tokentxns2?contractAddress=%s&mode=&p=' % key
+    if typ == 'MAN' :
+        SRC2 = 'https://etherscan.io/token/generic-tokenholders2?a=%s&s=2.5E%%2b26&p=' % key
+    else:
+        SRC2 = 'https://etherscan.io/token/generic-tokenholders2?a=%s&s=1E%%2b15&p=' % key
+
     scraper = cfscrape.create_scraper()
     for i in range(10, 0, -1):
-        url = SRC1 % str(i)
+        url = SRC1 + str(i)
+        print 'Downloading %s' % url
         html = scraper.get(url).content
         for k in parse(html):
             if k not in found:
                 found[k]
                 f.write(k + '\n')
 
-        hurl = SRC2 % str(i)
+        hurl = SRC2 + str(i)
+        print 'Downloading %s' % hurl
         html2 = scraper.get(hurl).content
         for k in holders_parse(html2):
             if k not in found:
                 found[k]
                 hf.write(k + '\n')
     num = common.regex_get(html, r'A\sTotal\sof\s(\d+)\sevents\sfound')
-    scrape_title(num)
+    scrape_title(num, typ)
 
 def holders_parse(html):
     infos = []
@@ -74,4 +87,6 @@ def parse(html):
     return infos
 
 if __name__ == '__main__':
-    etherscan()
+    for typ in ['MAN', 'QASH']:
+        print 'scrape %s...' % typ
+        etherscan(typ)

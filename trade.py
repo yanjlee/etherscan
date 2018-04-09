@@ -32,7 +32,7 @@ def scrape_holder_transfer(holders, coin):
 
     num = 0 
     for holder in holders:
-        f = open('./trade/%s.csv' % holder, 'w')
+        f = open('./holders/%s.csv' % holder, 'w')
         f.write('"TxHash", "Age", "From", "Direction", "To", "Quantity"\n')
         url = 'https://etherscan.io/token/generic-tokentxns2?contractAddress=%s&mode=&a=%s&p=%s' % (typ, holder, num)
         html = scraper.get(url).content
@@ -49,4 +49,3 @@ def scrape_holder_transfer(holders, coin):
 
 if __name__ == '__main__':
     scrape_holder_transfer(['0x2a0c0dbecc7e4d658f48e01e3fa353f44050c208'], 'MAN')
-
